@@ -86,11 +86,12 @@ func getPaths(basepath string) []PathInfo {
 	return paths
 }
 
-func loadFolder() []*LegendCharacter {
+// returns a list paths of all jsons in the folder
+func loadFolder(folderPath string) []*LegendCharacter {
 
 	legendChars := make([]*LegendCharacter, 0)
 
-	for i, pInfo := range getPaths("../") {
+	for i, pInfo := range getPaths(folderPath) {
 		log.Printf("%v %v", i, pInfo)
 
 		var currentLegendChar *LegendCharacter
@@ -124,6 +125,34 @@ func loadFolder() []*LegendCharacter {
 	return legendChars
 }
 
+// loads all legends from the folder as jsons into the db. sorts out duplicates by character name and milestone json data
+func loadFolderIntoDb(folderPath string, db *gorm.DB) {
+	for _, legend := range loadFolder(folderPath) {
+
+		var existingChar LegendCharacter
+		err := db.Where(&LegendCharacter{Name: legend.Name}).Preload("Milestones").First(&existingChar).Error
+		if err == nil {
+			log.Printf("Char %v already exists with ID %v", legend.Name, existingChar.ID)
+			legend.ID = existingChar.ID
+			legend.CreatedAt = existingChar.CreatedAt
+			legend.DeletedAt = existingChar.DeletedAt
+
+			for i, newMstone := range legend.Milestones {
+				for _, existingMstone := range existingChar.Milestones {
+					if newMstone.CharacterSheet == existingMstone.CharacterSheet {
+						log.Printf("Char %v Milestone %v already exists with ID %v", legend.Name, i, existingMstone.ID)
+						legend.Milestones[i].ID = existingMstone.ID
+						legend.Milestones[i].CreatedAt = existingMstone.CreatedAt
+						legend.Milestones[i].DeletedAt = existingMstone.DeletedAt
+					}
+				}
+			}
+		}
+
+		db.Save(legend)
+	}
+}
+
 func main() {
 	db, err := gorm.Open(sqlite.Open("legends.db"), &gorm.Config{})
 	if err != nil {
@@ -133,8 +162,5 @@ func main() {
 	db.AutoMigrate(&LegendCharacter{})
 	db.AutoMigrate(&LegendMilestone{})
 
-	for _, legend := range loadFolder() {
-		log.Print(legend.Name)
-		db.Save(legend)
-	}
+	loadFolderIntoDb("/data/MyDocumentsRPG/earthdawn", db)
 }
