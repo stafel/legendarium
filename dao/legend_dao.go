@@ -29,9 +29,28 @@ func (l *LegendDao) GetCharacters() []model.LegendCharacter {
 	return l.provider.GetCharacters()
 }
 
-func (l *LegendDao) GetCharacterById(id uint) model.LegendCharacter {
+func (l *LegendDao) GetCharacterById(id uint) (model.LegendCharacter, error) {
 	search := &model.LegendCharacter{}
 	search.ID = id
-	c, _ := l.provider.GetCharacter(search)
-	return c
+	return l.provider.GetCharacter(search)
+}
+
+func (l *LegendDao) GetMilestonesForCharacterId(id uint) ([]model.LegendMilestone, error) {
+	return l.provider.GetMilestones(&model.LegendMilestone{LegendCharacterID: id})
+}
+
+func (l *LegendDao) GetLatestMilestonesForCharacterId(id uint) (model.LegendMilestone, error) {
+	return l.provider.GetLatestMilestone(&model.LegendMilestone{LegendCharacterID: id})
+}
+
+func (l *LegendDao) GetMilestoneForMilestoneId(id uint) (model.LegendMilestone, error) {
+	referenceMilestone := &model.LegendMilestone{}
+	referenceMilestone.ID = id
+
+	ms, err := l.provider.GetMilestones(referenceMilestone)
+	if err != nil {
+		return *referenceMilestone, err
+	}
+
+	return ms[0], nil
 }

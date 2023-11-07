@@ -68,3 +68,25 @@ func (s *SqliteProvider) GetCharacter(searchReferenceChar *model.LegendCharacter
 	}
 	return existingChar, nil
 }
+
+func (s *SqliteProvider) GetMilestones(searchReferenceMilestone *model.LegendMilestone) ([]model.LegendMilestone, error) {
+
+	milestones := make([]model.LegendMilestone, 0)
+
+	err := s.db.Where(searchReferenceMilestone).Find(&milestones).Error
+	if err != nil {
+		return milestones, err
+	}
+	return milestones, nil
+}
+
+func (s *SqliteProvider) GetLatestMilestone(searchReferenceMilestone *model.LegendMilestone) (model.LegendMilestone, error) {
+
+	var milestone model.LegendMilestone
+
+	err := s.db.Where(searchReferenceMilestone).Order("reference_date desc").First(&milestone).Error
+	if err != nil {
+		return milestone, err
+	}
+	return milestone, nil
+}
