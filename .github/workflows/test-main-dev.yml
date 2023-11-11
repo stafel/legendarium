@@ -1,0 +1,30 @@
+name: Testing main and dev
+on: 
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: './app'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.x'
+        
+      - name: Install dependencies
+        run: 'go get .'
+      
+      - name: Build
+        run: go build -v .
+
+      - name: Test
+        run: go test
